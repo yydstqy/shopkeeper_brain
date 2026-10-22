@@ -74,10 +74,13 @@ class DocumentSplitNode(BaseNode):
         self._log_summary(md_content, final_chunks, max_content_length)
         self._backup_chunks(state, final_chunks)
 
+        state["chunks"] = final_chunks
 
         return state
 
     def _validate_get_input(self, state):
+
+        self.log_step("step1", "获取输入参数并校验")
         md_content = state.get("md_content")
         file_title = state.get("file_title")
         max_content_length = self.config.max_content_length
@@ -98,12 +101,13 @@ class DocumentSplitNode(BaseNode):
 
     def _split_by_title(self, md_content, file_title) -> List[dict[str, Any]]:
 
+        self.log_step("step2", "按照标题切分")
         sections : List[dict[str, Any]] = []
         body_lines = []
         heading_re = re.compile(r"^\s*(#{1,6})\s+(.+)")
         title = ""
         hierarchy = [""]*7      #存放标题的层级，用于判断标题的父子关系    ["","# 标题","## 标题","### 标题","#### 标题","##### 标题","###### 标题"]
-        level = 0
+        current_level = 0
         is_fence = False
 
         # 封装section
@@ -112,11 +116,11 @@ class DocumentSplitNode(BaseNode):
             if body:        #有些md文档开头的段落没有标题，做分类处理
 
                 parent_title = ""
-                for i in range(level-1,0,-1):
+                for i in range(current_level-1,0,-1):
                     parent_title = hierarchy[i] if hierarchy[i] else ""
                     if parent_title: break
                 if not parent_title:
-                    parent_title = file_title
+                    parent_title = parent_title if title else file_title
 
                 section = {
                 "title": title if title else file_title,
@@ -136,7 +140,7 @@ class DocumentSplitNode(BaseNode):
         for line in lines:
 
             # 判断是否存在代码块
-            if line.strip().startswith("```") or line.strip().endswith("~~~"):
+            if line.strip().startswith("```") or line.strip().startswith("~~~"):
                 is_fence = not is_fence
 
             match = heading_re.match(line)
@@ -144,6 +148,7 @@ class DocumentSplitNode(BaseNode):
                 _flush()
                 title = line
                 level = len(match.group(1))     # 获取#数量，判断标题级别
+                current_level = level
                 hierarchy[level] = line
                 for i in range(level+1, 7,1):       #清除当前标题级别之后的标题
                     hierarchy[i] = ""
@@ -155,6 +160,8 @@ class DocumentSplitNode(BaseNode):
         return sections
 
     def _split_long_merge_short(self, sections, max_content_length=1000, min_content_length=200) -> List[dict[str, Any]]:
+
+        self.log_step("step3", "拆分或合并")
         current_sections = []
         for section in sections:
             sub_sections = self._split_long(section,max_content_length)
@@ -165,6 +172,7 @@ class DocumentSplitNode(BaseNode):
 
     def _split_long(self, section:dict[str, Any], max_content_length=1000) -> List[dict[str, Any]]:
 
+        self.log_step("step3.1", "拆分长段落")
         sub_section = []
 
         # 1.获取section对象属性
@@ -209,21 +217,16 @@ class DocumentSplitNode(BaseNode):
         sub_section = []
         for index,text in enumerate(texts):
             sub_section.append({
-                "title": title,
+                "title":f"{title}",
                 "parent_title": parent_title,
                 "file_title": file_title,
-                "body": f"{title}--{index+1} {text}"
+                "body": text,
+                "part": f"{index + 1}"  # 标记序号
             })
 
         #     判断切分数量结果，要么返回唯一原元素列表，要么返回多个新元素类别
 
         # 9.返回
-        return sub_section
-
-
-
-
-
         return sub_section
 
     def _merge_short(self, current_sections, min_content_length=100) -> List[dict[str, Any]]:
@@ -236,14 +239,15 @@ class DocumentSplitNode(BaseNode):
         :return: 合并后的section列表
         """
 
+        self.log_step("step3.2", "合并短段落")
         final_sections = []
         current_section = current_sections[0]
 
         for next_section in current_sections[1:]:
 
             #同一个大章节下，两个小章节可以合并
-            same_title = current_section.get("parent_title")
-            if same_title and len(current_section.get("body")) <= min_content_length:
+            same_title = current_section.get("parent_title") == next_section.get("parent_title")
+            if same_title and len(current_section.get("body")) < min_content_length:
                 current_section["body"] = current_section["body"].rstrip() + "\n\n" + next_section["body"].lstrip()
                 current_section["title"] = current_section["parent_title"]
             else:
@@ -252,11 +256,26 @@ class DocumentSplitNode(BaseNode):
 
         final_sections.append(current_section)
 
-        return final_sections
+        # 对所有 section 的 part 做处理
+        part_counter = {}
+        result = []
+        for final_section in final_sections:
+            if "part" in final_section:
+                parent_title = final_section.get('parent_title')
+                part_counter[parent_title] = part_counter.get(parent_title, 0) + 1
+                new_part = part_counter[parent_title]
+                final_section['part'] = new_part
+                final_section['title'] = final_section['title'] + f"- {new_part}"
+
+            result.append(final_section)
+
+        return result
 
     def _assemble_chunk(self, final_sections) -> List[Dict[str, Any]]:
 
+        self.log_step("step4", "组装切片")
         final_chunks = []
+
         for section in final_sections:
             chunk = {
                 "title": section.get("title", ""),
@@ -264,6 +283,10 @@ class DocumentSplitNode(BaseNode):
                 "file_title": section.get("file_title", ""),
                 "content": section["title"] +"\n\n" + section["body"]
             }
+
+            if "part" in chunk:
+                chunk['part'] = section.get('part')
+
             final_chunks.append(chunk)
 
         return final_chunks
