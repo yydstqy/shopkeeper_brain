@@ -84,19 +84,19 @@ class ItemNameRecognitionNode(BaseNode):
         :return: 用于提取商品名称的上下文参考内容
         """
 
-        chunks = chunks[0::item_name_chunk_k]
+        chunks = chunks[0:item_name_chunk_k]
         final_context = []
         total = 0
 
         for index,chunk in enumerate(chunks):
-            if not chunk and not isinstance(chunk,dict):
+            if not chunk or not isinstance(chunk,dict):
                 continue
 
             chunk_content = chunk.get("content", "")
             content = f"【切片】-【{index+1}】\n" + chunk_content
             total += len(content)
 
-            if len(content) < item_name_chunk_size:
+            if total < item_name_chunk_size:
                 final_context.append(content)
 
         return "\n\n".join(final_context)
