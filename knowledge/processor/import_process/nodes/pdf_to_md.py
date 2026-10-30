@@ -19,7 +19,7 @@ class PdfToMdNode(BaseNode):
         #   mineru-kit parse D:\\doc\\万用表RS-12的使用.pdf -o D:\temp_dir --tier standard
     """
 
-    name = "pdf_to_node"
+    name = "pdf_to_md_node"
 
     def process(self,state : ImportGraphState):
 

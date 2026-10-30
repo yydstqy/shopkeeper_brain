@@ -440,6 +440,8 @@ class MarkDownImageNode(BaseNode):
         #5. 备份
         self.md_file_handler.backup(new_md_content,md_path_obj)
 
+        state["md_content"] = new_md_content
+
         return state
 
 if __name__ == "__main__":

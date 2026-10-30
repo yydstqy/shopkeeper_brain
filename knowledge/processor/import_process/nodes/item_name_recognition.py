@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Tuple, List, Dict, Any
 
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -44,6 +45,9 @@ class ItemNameRecognitionNode(BaseNode):
 
         #6.回填状态     将item_name回填到state和每一个chunk对象中
         self._fill_item_name_state(state, item_name,chunks)
+
+        #7.备份切分结果
+        self._backup_chunks(state, chunks)
 
         return state
 
@@ -110,7 +114,7 @@ class ItemNameRecognitionNode(BaseNode):
         """
 
         # 获取llm客户端
-        llm_client = AIClients.get_llm_openai(False)       #返回文本不是json
+        llm_client = AIClients.get_llm_openai(True)
 
         # 用户提示词
         user_prompt = ITEM_NAME_USER_PROMPT_TEMPLATE.format(file_title=file_title, context=item_name_recognition_context)
@@ -124,7 +128,10 @@ class ItemNameRecognitionNode(BaseNode):
             self.logger.error(f"LLM调用失败，降级处理，用文件名称作为商品名称")
             return file_title
 
-        item_name = llm_response.content.strip()
+        # item_name = llm_response.content.strip()        #{"item_name":"RS-12数字万用表"}
+        response_dict = json.loads(llm_response.content.strip())
+        item_name = response_dict.get("item_name")      # RS-12数字万用表
+
 
         return item_name
 
@@ -220,6 +227,25 @@ class ItemNameRecognitionNode(BaseNode):
             chunk["item_name"] = item_name
         state["item_name"] = item_name
 
+    def _backup_chunks(self, state, chunks):
+        """
+        将切分结果备份到json文件
+        :param state:
+        :param chunks:
+        :return:
+        """
+        local_dir = state.get("file_dir", "")
+        if not local_dir:
+            return
+
+        os.makedirs(local_dir, exist_ok=True)  # exist_ok=True：如果目录已存在，不会抛出异常，直接跳过
+        output_path = os.path.join(local_dir, "chunks_item_name.json")
+        try:
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(chunks, f, ensure_ascii=False, indent=4)
+        except Exception as e:
+            self.logger.warning(f"备份失败：{e}")
+
 if __name__ == '__main__':
     setup_logging()
 
@@ -230,6 +256,7 @@ if __name__ == '__main__':
 
     # 2. 构建state
     state = {
+        "file_dir": "D:/temp_dir/万用表RS-12的使用",
         "file_title": "万用表RS-12的使用_new",
         "chunks": chunk_content
     }

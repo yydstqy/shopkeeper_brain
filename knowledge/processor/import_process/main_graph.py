@@ -136,7 +136,7 @@ if __name__ == "__main__":
     setup_logging()
 
     import_file_path = r"D:\doc\万用表RS-12的使用.pdf"
-    file_dir = r"D:\temp_dir"
+    file_dir = r"D:\temp_dir2"
 
     # 1. 测试编排流程
     final_state = run_import_graph(import_file_path,file_dir)

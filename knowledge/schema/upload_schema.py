@@ -2,6 +2,10 @@ from typing import List, Dict
 from openai import BaseModel
 from pydantic import Field
 
+"""
+前后端接口对接：
+    定义响应数据模型，统一返回格式
+"""
 
 class UploadResponse(BaseModel):
     """文件上传响应 POST   /upload 返回"""
