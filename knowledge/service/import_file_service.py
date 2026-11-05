@@ -67,7 +67,7 @@ class ImportFileService:
 
         #   D:\PyCharm 2026.2.3\pyprojcet\shopkeeper_brain\knowledge\temp_data\20261025\ABCDEFGH
         file_dir = os.path.join(self._get_path_with_date(), task_id)
-        start = time.time
+        start = time.time()
 
         # 2.设置任务状态："upload_file"任务开始了
         add_running_task(task_id, "upload_file")

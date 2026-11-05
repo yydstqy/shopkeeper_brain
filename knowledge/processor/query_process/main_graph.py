@@ -1,5 +1,5 @@
 import os
-
+import json
 
 
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
@@ -23,6 +23,7 @@ from knowledge.processor.query_process.nodes.hyde_search import HyDeSearchNode
 from knowledge.processor.query_process.nodes.rrf import RrfNode
 from knowledge.processor.query_process.nodes.rerank import RerankNode
 from knowledge.processor.query_process.nodes.web_search_mcp import WebSearchMcpNode
+from knowledge.processor.query_process.base import setup_logging
 # 加载环境变量
 load_dotenv()
 
@@ -143,7 +144,7 @@ query_app = create_query_graph()
 
 
 if __name__ == "__main__":
-    from knowledge.processor.query_process.base import setup_logging
+
 
     setup_logging()
 
@@ -173,7 +174,8 @@ if __name__ == "__main__":
     print(f"  商品名: {result_1.get('item_names')}")
     print(f"  重写查询: {result_1.get('rewritten_query')}")
     answer_1 = result_1.get("answer", "")
-    print(f"  答案: {answer_1[:200]}..." if len(answer_1) > 200 else f"  答案: {answer_1}")
+    print(f"  答案: {answer_1}")
+    # print(f"  答案: {answer_1[:200]}..." if len(answer_1) > 200 else f"  答案: {answer_1}")
 
     query_app.get_graph().print_ascii()
 

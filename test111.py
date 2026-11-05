@@ -1,5 +1,3 @@
+from dotenv import load_dotenv; load_dotenv(r"D:\PyCharm 2026.2.3\pyprojcet\shopkeeper_brain\knowledge\.env")
 import os
-from dotenv import load_dotenv
-load_dotenv()
-key = os.getenv("OPENAI_API_KEY", "")
-print(f"OPENAI_API_KEY: {key[:8]}...{key[-4:]}" if key else "OPENAI_API_KEY 为空!")
+print(repr(os.getenv("BGE_DEVICE")), repr(os.getenv("BGE_FP16")))

@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import Dict, Tuple
 
 from agents.mcp import MCPServerStreamableHttp
@@ -64,7 +65,7 @@ class WebSearchMcpNode(BaseNode):
                 tool_name="bailian_web_search",
                 arguments={"query": validateed_rewritten_query, "count": 3}
             )
-            print(execute_tool_result)
+            # print(execute_tool_result)
 
             # 4.解析结果
             if not execute_tool_result or not execute_tool_result.content or not execute_tool_result.content[0]:
@@ -91,7 +92,7 @@ class WebSearchMcpNode(BaseNode):
 
 
 if __name__ == '__main__':
-    import json
+
 
     state = {
         "rewritten_query": "今天的小米汽车的股价是多少",

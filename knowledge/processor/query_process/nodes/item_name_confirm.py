@@ -335,7 +335,7 @@ class ItemNameConfirmNode(BaseNode):
 
         # 2.LLM获取商品名称
         extract_item_names:Dict[str, Any] = self._item_name_extractor.extract_item_name(original_query, history_text)
-        print(extract_item_names)
+        # print(extract_item_names)
         item_names = extract_item_names.get("item_names")
         rewritten_query = extract_item_names.get("rewritten_query")
 
